@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprende Inglés Jugando</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .activity-section, #login-screen { /* Aplicar a login también */
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 1.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: bold; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 0.25rem;
+        }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-secondary { background-color: #10b981; color: white; }
+        .btn-secondary:hover { background-color: #059669; }
+        .btn-difficulty { background-color: #f97316; color: white; }
+        .btn-difficulty:hover { background-color: #ea580c; }
+        .btn-reset { background-color: #6b7280; color: white; }
+        .btn-reset:hover { background-color: #4b5563; }
+        .btn-mode { background-color: #8b5cf6; color: white; }
+        .btn-mode:hover { background-color: #7c3aed; }
+        .btn-mode.selected { background-color: #6d28d9; }
+
+        .feedback { margin-top: 1rem; font-weight: bold; padding: 0.5rem; border-radius: 0.5rem; }
+        .feedback-correct { color: #15803d; background-color: #dcfce7; }
+        .feedback-incorrect { color: #b91c1c; background-color: #fee2e2; }
+        .feedback-info { color: #1d4ed8; background-color: #dbeafe; }
+
+        select, input[type="text"] { /* Estilo input */
+             padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #d1d5db; margin: 0 0.5rem;
+        }
+        .main-container { max-width: 800px; margin: 2rem auto; padding: 1rem; }
+
+        /* Estilos Memo Test */
+        #memo-test-grid { perspective: 1000px; display: grid; gap: 1rem; }
+        .memo-card {
+            background-color: #3b82f6; border-radius: 0.5rem; height: 6rem; cursor: pointer;
+            position: relative; transform-style: preserve-3d;
+            transition: transform 0.6s, background-color 0.3s, opacity 0.3s;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .memo-card .card-face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 0.5rem; padding: 0.5rem; text-align: center; font-weight: bold;
+        }
+        .card-front { background-color: #a5f3fc; color: #0c4a6e; transform: rotateY(180deg); }
+        .card-back { background-color: #3b82f6; font-size: 2rem; color: white; }
+        .memo-card.is-flipped { transform: rotateY(180deg); }
+        .memo-card.is-found { transform: rotateY(180deg); cursor: default; }
+        .memo-card.is-matched {
+            transform: rotateY(180deg); background-color: #dcfce7; border: 2px solid #10b981;
+            cursor: default; opacity: 0.6;
+        }
+        .memo-card.is-matched .card-front { background-color: transparent; color: #15803d; }
+        #game-status { margin-top: 1.5rem; text-align: center; font-size: 1.1rem; font-weight: 500; }
+        #player-scores span { margin: 0 0.5rem; }
+        .current-player-indicator { font-weight: bold; color: #8b5cf6; }
+        /* Estilo para info jugador */
+        #player-info {
+             text-align: right;
+             padding: 0.5rem 1rem;
+             background-color: #e0f2fe; /* Azul muy claro */
+             border-radius: 0.75rem;
+             margin-bottom: 1rem;
+             font-weight: 500;
+             color: #075985; /* Azul oscuro */
+        }
+         #player-info span { font-weight: bold; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="main-container">
+        <header class="text-center mb-4"> <h1 class="text-4xl font-bold text-blue-600">¡Aprende Inglés Jugando!</h1>
+            </header>
+
+        <div id="login-screen" class="text-center">
+            <h2 class="text-2xl font-semibold mb-4 text-purple-600">¡Bienvenido/a!</h2>
+            <p class="text-lg text-gray-600 mb-6">Escribe tu nombre para empezar a jugar:</p>
+            <div>
+                <input type="text" id="player-name" placeholder="Tu nombre" class="text-center text-lg mb-4">
+            </div>
+            <button onclick="handleLogin()" class="btn btn-primary text-lg">¡A Jugar!</button>
+        </div>
+
+        <div id="game-content" class="hidden">
+
+            <div id="player-info">
+                Jugando como: <span id="display-name"></span> | Puntos: <span id="display-score">0</span>
+            </div>
+
+            <div id="difficulty-selection" class="text-center mb-6">
+                <h2 class="text-2xl font-semibold mb-4 text-orange-600">Elige la Dificultad</h2>
+                <button onclick="setDifficulty('easy')" class="btn btn-difficulty">Fácil</button>
+                <button onclick="setDifficulty('medium')" class="btn btn-difficulty">Medio</button>
+                <button onclick="setDifficulty('hard')" class="btn btn-difficulty">Difícil</button>
+                <p id="current-difficulty" class="mt-3 text-gray-700 font-medium"></p>
+            </div>
+
+            <div id="activity-container" class="hidden">
+                 <div class="flex justify-center flex-wrap space-x-4 mb-6 border-b pb-4">
+                     <button onclick="showActivity('fill-blanks')" class="btn btn-primary">Completar Oraciones</button>
+                     <button onclick="showActivity('numbers')" class="btn btn-primary">Números</button>
+                     <button onclick="showActivity('verbs')" class="btn btn-primary">Verbos (Memo Test)</button>
+                </div>
+
+                <div id="fill-blanks-section" class="activity-section hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-center text-blue-700">Completa la Oración</h3>
+                    <div id="sentence-container" class="text-lg text-center mb-4"></div>
+                    <div class="text-center"> <button onclick="checkFillBlanksAnswer()" class="btn btn-secondary">Comprobar</button> <button onclick="loadFillBlanksSentence()" class="btn btn-secondary">Siguiente</button> </div>
+                    <div id="fill-blanks-feedback" class="feedback text-center"></div>
+                </div>
+                <div id="numbers-section" class="activity-section hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-center text-blue-700">Aprende los Números</h3>
+                    <div id="numbers-content" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center"></div>
+                    <div id="numbers-quiz-button-container" class="text-center mt-6"> <button onclick="startNumberQuiz()" class="btn btn-secondary">¡Prueba Rápida!</button> </div>
+                    <div id="number-quiz" class="mt-4 text-center hidden"> <p id="number-quiz-question" class="mb-2 font-medium"></p> <input type="text" id="number-quiz-answer" class="border rounded px-2 py-1 mr-2" placeholder="Escribe el número en inglés"> <button onclick="checkNumberQuiz()" class="btn btn-secondary">Revisar</button> <div id="number-quiz-feedback" class="feedback"></div> </div>
+                </div>
+                <div id="verbs-section" class="activity-section hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-center text-blue-700">Memo Test de Verbos</h3>
+                    <div id="mode-selection" class="text-center mb-6">
+                        <h4 class="text-lg font-medium mb-2">Elige el modo de juego:</h4>
+                        <button id="btn-mode-1p" onclick="selectGameMode('1P')" class="btn btn-mode">1 Jugador</button>
+                        <button id="btn-mode-2p" onclick="selectGameMode('2P')" class="btn btn-mode">2 Jugadores</button>
+                    </div>
+                    <div id="memo-game-area" class="hidden">
+                        <p class="text-center text-gray-600 mb-6">Encuentra los pares de verbos (Inglés - Español).</p>
+                        <div id="memo-test-grid" class="mb-6"></div>
+                        <div id="game-status" class="mb-4">
+                            <p id="turn-indicator" class="mb-2"></p>
+                            <div id="player-scores" class="flex justify-center flex-wrap"> <p class="mx-2">Parejas: <span id="matches-count">0</span> / <span id="total-pairs-count">0</span></p>
+                                <p class="mx-2">Intentos: <span id="attempts-count">0</span></p>
+                                <p id="score-p1" class="mx-2 hidden">J1: <span id="score-p1-count">0</span></p>
+                                <p id="score-p2" class="mx-2 hidden">J2: <span id="score-p2-count">0</span></p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button onclick="setupMemoTest()" class="btn btn-reset">Reiniciar Juego</button>
+                            <button onclick="showModeSelection()" class="btn btn-primary ml-2">Cambiar Modo</button>
+                        </div>
+                         <div id="win-message" class="feedback feedback-info text-center mt-4 hidden"></div>
+                    </div>
+                </div>
+            </div> </div> </div> <script>
+        // Variables Globales
+        let playerName = null;
+        let playerScore = 0;
+        let currentDifficulty = null;
+        let currentActivity = null;
+        let currentFillBlanksData = {};
+        let currentNumberQuizData = {};
+        // Memo Test Variables
+        let memoGameMode = '1P';
+        let memoCurrentPlayer = 1;
+        let memoPlayer1Score = 0;
+        let memoPlayer2Score = 0;
+        let memoFlippedCards = [];
+        let memoMatchedPairs = 0;
+        let memoAttempts = 0;
+        let memoLockBoard = false;
+        let memoTotalPairs = 0;
+
+        // --- NUEVO: Definición de Puntos por Dificultad ---
+        const pointValues = {
+            easy: {
+                fillBlanks: { correct: 10, incorrect: -2 },
+                numberQuiz: { correct: 5, incorrect: -1 },
+                memoTestAttempt: { correct: 15, incorrect: -3 } // Puntos por pareja correcta / intento fallido (1P)
+            },
+            medium: {
+                fillBlanks: { correct: 15, incorrect: -4 },
+                numberQuiz: { correct: 10, incorrect: -2 },
+                memoTestAttempt: { correct: 25, incorrect: -5 }
+            },
+            hard: {
+                fillBlanks: { correct: 20, incorrect: -6 },
+                numberQuiz: { correct: 15, incorrect: -3 },
+                memoTestAttempt: { correct: 35, incorrect: -7 }
+            }
+        };
+
+        // --- Datos (Sentences, Numbers, Verbs - sin cambios) ---
+        const sentences = { easy: [ { text: "The cat ___ on the mat.", options: ["sit", "sits", "sat"], answer: "sits" }, { text: "I ___ an apple.", options: ["eat", "eats", "ate"], answer: "eat" }, { text: "She ___ happy.", options: ["is", "are", "am"], answer: "is" }, { text: "We ___ friends.", options: ["is", "are", "am"], answer: "are" }, { text: "He ___ a blue car.", options: ["has", "have", "had"], answer: "has" } ], medium: [ { text: "They ___ to the park yesterday.", options: ["go", "goes", "went"], answer: "went" }, { text: "The birds ___ in the morning.", options: ["sing", "sings", "sang"], answer: "sing" }, { text: "He is ___ than his brother.", options: ["tall", "taller", "tallest"], answer: "taller" }, { text: "I ___ my homework now.", options: ["do", "am doing", "did"], answer: "am doing" }, { text: "She ___ English very well.", options: ["speak", "speaks", "spoke"], answer: "speaks" } ], hard: [ { text: "If I ___ you, I would study more.", options: ["was", "were", "am"], answer: "were" }, { text: "He ___ living here since 2010.", options: ["has been", "have been", "was"], answer: "has been" }, { text: "The book ___ by the famous author.", options: ["wrote", "was written", "writes"], answer: "was written" }, { text: "I wish I ___ fly.", options: ["can", "could", "would"], answer: "could" }, { text: "Despite ___ tired, she finished the race.", options: ["be", "being", "was"], answer: "being" } ] };
+        const numbers = { easy: { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten" }, medium: { 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen", 20: "twenty", 30: "thirty", 40: "forty", 50: "fifty", 100: "one hundred"}, hard: { 25: "twenty-five", 67: "sixty-seven", 99: "ninety-nine", 101: "one hundred and one", 500: "five hundred", 1000: "one thousand", 123: "one hundred and twenty-three", 840: "eight hundred and forty"} };
+        const verbs = { easy: [ { es: "correr", en: "run" }, { es: "comer", en: "eat" }, { es: "dormir", en: "sleep" }, { es: "jugar", en: "play" }, { es: "leer", en: "read" }, { es: "escribir", en: "write" }, { es: "saltar", en: "jump" }, { es: "hablar", en: "talk" }, { es: "ver", en: "see" }, { es: "ir", en: "go" } ], medium: [ { es: "pensar", en: "think" }, { es: "aprender", en: "learn" }, { es: "enseñar", en: "teach" }, { es: "escuchar", en: "listen" }, { es: "mirar", en: "watch" }, { es: "ayudar", en: "help" }, { es: "trabajar", en: "work" }, { es: "estudiar", en: "study" }, { es: "abrir", en: "open" }, { es: "cerrar", en: "close" } ], hard: [ { es: "entender", en: "understand" }, { es: "explicar", en: "explain" }, { es: "crear", en: "create" }, { es: "imaginar", en: "imagine" }, { es: "recordar", en: "remember" }, { es: "olvidar", en: "forget" }, { es: "decidir", en: "decide" }, { es: "creer", en: "believe" }, { es: "lograr", en: "achieve" }, { es: "mejorar", en: "improve" } ] };
+
+        // --- Lógica de Login ---
+        function handleLogin() {
+            const nameInput = document.getElementById('player-name');
+            const name = nameInput.value.trim();
+            if (!name) { showModal("Por favor, escribe tu nombre para continuar."); return; }
+            playerName = name;
+            playerScore = 0; // Reset score on login
+            document.getElementById('display-name').textContent = playerName;
+            updateScoreDisplay();
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('game-content').classList.remove('hidden');
+            document.getElementById('difficulty-selection').classList.remove('hidden');
+            document.getElementById('activity-container').classList.add('hidden');
+        }
+
+        // --- MODIFICADO: Actualiza Puntuación (asegura >= 0) ---
+        function updateScore(points) {
+            if (!currentDifficulty) return; // Necesita dificultad para saber cuántos puntos
+            let newScore = playerScore + points;
+            playerScore = Math.max(0, newScore); // No permitir puntuación negativa
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('display-score').textContent = playerScore;
+        }
+
+        // --- Funciones de Lógica General ---
+        function setDifficulty(difficulty) {
+             if (!playerName) return;
+             // Si cambiamos dificultad, reseteamos la puntuación? Podría ser, o mantenerla.
+             // Por ahora, la mantenemos. Si se quiere resetear, añadir: playerScore = 0; updateScoreDisplay();
+             currentDifficulty = difficulty;
+             document.getElementById('current-difficulty').textContent = `Dificultad seleccionada: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
+             document.getElementById('activity-container').classList.remove('hidden');
+             hideAllActivities();
+             currentActivity = null;
+             resetFeedbacks();
+        }
+
+        function showActivity(activityId) {
+             if (!currentDifficulty || !playerName) { showModal("Por favor, selecciona una dificultad primero."); return; }
+             hideAllActivities();
+             currentActivity = activityId;
+             const section = document.getElementById(`${activityId}-section`);
+             if (section) { section.classList.remove('hidden'); }
+             resetFeedbacks();
+             if (activityId === 'fill-blanks') { loadFillBlanksSentence(); }
+             else if (activityId === 'numbers') { loadNumbers(); document.getElementById('numbers-content').classList.remove('hidden'); document.getElementById('numbers-quiz-button-container').classList.remove('hidden'); document.getElementById('number-quiz').classList.add('hidden'); }
+             else if (activityId === 'verbs') { showModeSelection(); }
+        }
+
+        function hideAllActivities() {
+            document.getElementById('fill-blanks-section')?.classList.add('hidden');
+            document.getElementById('numbers-section')?.classList.add('hidden');
+            document.getElementById('verbs-section')?.classList.add('hidden');
+            document.getElementById('mode-selection')?.classList.add('hidden');
+            document.getElementById('memo-game-area')?.classList.add('hidden');
+        }
+         function resetFeedbacks() {
+             const fbFill = document.getElementById('fill-blanks-feedback');
+             const fbNum = document.getElementById('number-quiz-feedback');
+             const winMsg = document.getElementById('win-message');
+             if(fbFill) { fbFill.classList.remove('feedback-correct', 'feedback-incorrect'); fbFill.textContent = ''; }
+             if(fbNum) { fbNum.classList.remove('feedback-correct', 'feedback-incorrect'); fbNum.textContent = ''; }
+             if(winMsg) { winMsg.classList.add('hidden'); winMsg.textContent = ''; }
+         }
+
+        // --- Lógica Fill Blanks (MODIFICADA para puntos +/-) ---
+        function loadFillBlanksSentence() { if (!currentDifficulty) return; const difficultySentences = sentences[currentDifficulty]; const randomIndex = Math.floor(Math.random() * difficultySentences.length); currentFillBlanksData = difficultySentences[randomIndex]; const sentenceContainer = document.getElementById('sentence-container'); const parts = currentFillBlanksData.text.split('___'); const select = document.createElement('select'); select.id = 'word-options'; const defaultOption = document.createElement('option'); defaultOption.value = ""; defaultOption.textContent = "Elige..."; select.appendChild(defaultOption); const options = [...currentFillBlanksData.options].sort(() => Math.random() - 0.5); options.forEach(option => { const optElement = document.createElement('option'); optElement.value = option; optElement.textContent = option; select.appendChild(optElement); }); sentenceContainer.innerHTML = ''; sentenceContainer.appendChild(document.createTextNode(parts[0])); sentenceContainer.appendChild(select); sentenceContainer.appendChild(document.createTextNode(parts[1])); const feedbackDiv = document.getElementById('fill-blanks-feedback'); feedbackDiv.textContent = ''; feedbackDiv.className = 'feedback text-center'; }
+        function checkFillBlanksAnswer() {
+            if (!currentDifficulty) return;
+            const selectedOption = document.getElementById('word-options').value;
+            const feedbackDiv = document.getElementById('fill-blanks-feedback');
+            const points = pointValues[currentDifficulty].fillBlanks; // Obtener puntos para esta dificultad
+
+            if (!selectedOption) {
+                feedbackDiv.textContent = '¡No olvides elegir una opción!';
+                feedbackDiv.className = 'feedback text-center feedback-incorrect';
+                return;
+            }
+            if (selectedOption === currentFillBlanksData.answer) {
+                feedbackDiv.textContent = `¡Correcto! 🎉 (${points.correct > 0 ? '+' : ''}${points.correct} Puntos)`;
+                feedbackDiv.className = 'feedback text-center feedback-correct';
+                updateScore(points.correct); // Sumar puntos
+            } else {
+                feedbackDiv.textContent = `Incorrecto. (${points.incorrect} Puntos) La respuesta era "${currentFillBlanksData.answer}". 🤔`;
+                feedbackDiv.className = 'feedback text-center feedback-incorrect';
+                updateScore(points.incorrect); // Restar puntos
+            }
+        }
+
+        // --- Lógica Numbers (MODIFICADA para puntos +/-) ---
+        function loadNumbers() { if (!currentDifficulty) return; const numbersToShow = numbers[currentDifficulty]; const numbersContent = document.getElementById('numbers-content'); numbersContent.innerHTML = ''; for (const number in numbersToShow) { const word = numbersToShow[number]; const card = document.createElement('div'); card.className = 'p-4 border rounded-lg shadow bg-blue-50'; card.innerHTML = `<p class="text-2xl font-bold text-blue-700">${number}</p><p class="text-gray-600">${word}</p>`; numbersContent.appendChild(card); } numbersContent.classList.remove('hidden'); }
+        function startNumberQuiz() { if (!currentDifficulty) return; const numbersForQuiz = numbers[currentDifficulty]; const numberKeys = Object.keys(numbersForQuiz); if (numberKeys.length === 0) { showModal("No hay números definidos para esta dificultad."); return; } const randomKey = numberKeys[Math.floor(Math.random() * numberKeys.length)]; const correctWord = numbersForQuiz[randomKey]; currentNumberQuizData = { number: randomKey, word: correctWord }; document.getElementById('numbers-content').classList.add('hidden'); document.getElementById('numbers-quiz-button-container').classList.add('hidden'); document.getElementById('number-quiz-question').textContent = `¿Cómo se escribe el número ${randomKey} en inglés?`; document.getElementById('number-quiz-answer').value = ''; document.getElementById('number-quiz-feedback').textContent = ''; document.getElementById('number-quiz-feedback').className = 'feedback'; document.getElementById('number-quiz').classList.remove('hidden'); }
+        function checkNumberQuiz() {
+            if (!currentDifficulty) return;
+            const userAnswer = document.getElementById('number-quiz-answer').value.trim().toLowerCase();
+            const feedbackDiv = document.getElementById('number-quiz-feedback');
+            const points = pointValues[currentDifficulty].numberQuiz; // Obtener puntos
+
+            if (!userAnswer) {
+                feedbackDiv.textContent = 'Escribe tu respuesta.';
+                feedbackDiv.className = 'feedback feedback-incorrect';
+                return;
+            }
+            if (userAnswer === currentNumberQuizData.word.toLowerCase()) {
+                feedbackDiv.textContent = `¡Muy bien! 👍 (${points.correct > 0 ? '+' : ''}${points.correct} Puntos)`;
+                feedbackDiv.className = 'feedback feedback-correct';
+                updateScore(points.correct); // Sumar puntos
+            } else {
+                feedbackDiv.textContent = `Casi... (${points.incorrect} Puntos) La respuesta correcta es "${currentNumberQuizData.word}".`;
+                feedbackDiv.className = 'feedback feedback-incorrect';
+                updateScore(points.incorrect); // Restar puntos
+            }
+        }
+
+        // --- Lógica Memo Test Verbos (MODIFICADA para puntos +/- en 1P) ---
+        function showModeSelection() { document.getElementById('mode-selection').classList.remove('hidden'); document.getElementById('memo-game-area').classList.add('hidden'); document.getElementById('btn-mode-1p').classList.remove('selected'); document.getElementById('btn-mode-2p').classList.remove('selected'); }
+        function selectGameMode(mode) { memoGameMode = mode; document.getElementById('btn-mode-1p').classList.toggle('selected', mode === '1P'); document.getElementById('btn-mode-2p').classList.toggle('selected', mode === '2P'); document.getElementById('mode-selection').classList.add('hidden'); document.getElementById('memo-game-area').classList.remove('hidden'); setupMemoTest(); }
+        function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
+        function setupMemoTest() { if (!currentDifficulty || !memoGameMode) return; let numberOfPairs; let gridCols; switch (currentDifficulty) { case 'easy': numberOfPairs = 6; gridCols = 4; break; case 'medium': numberOfPairs = 8; gridCols = 4; break; case 'hard': numberOfPairs = 10; gridCols = 5; break; default: numberOfPairs = 6; gridCols = 4; } memoTotalPairs = numberOfPairs; memoFlippedCards = []; memoMatchedPairs = 0; memoAttempts = 0; memoLockBoard = false; memoPlayer1Score = 0; memoPlayer2Score = 0; memoCurrentPlayer = 1; document.getElementById('win-message').classList.add('hidden'); updateGameStatus(); const verbsAvailable = verbs[currentDifficulty]; if (verbsAvailable.length < numberOfPairs) { showModal(`No hay suficientes verbos (${verbsAvailable.length}) para un juego de ${numberOfPairs} pares en esta dificultad. Intenta con otra.`); document.getElementById('memo-test-grid').innerHTML = ''; return; } const shuffledVerbs = shuffleArray([...verbsAvailable]); const selectedPairs = shuffledVerbs.slice(0, numberOfPairs); let cardValues = []; selectedPairs.forEach(pair => { cardValues.push({ value: pair.en, pairId: pair.en }); cardValues.push({ value: pair.es, pairId: pair.en }); }); const shuffledCardValues = shuffleArray(cardValues); const grid = document.getElementById('memo-test-grid'); grid.innerHTML = ''; grid.style.gridTemplateColumns = `repeat(${gridCols}, minmax(0, 1fr))`; shuffledCardValues.forEach(cardData => { const cardElement = document.createElement('div'); cardElement.classList.add('memo-card'); cardElement.dataset.value = cardData.value; cardElement.dataset.pairId = cardData.pairId; cardElement.innerHTML = ` <div class="card-face card-back">?</div> <div class="card-face card-front">${cardData.value}</div> `; cardElement.addEventListener('click', () => flipCard(cardElement)); grid.appendChild(cardElement); }); }
+        function flipCard(card) { if (memoLockBoard || card.classList.contains('is-flipped') || card.classList.contains('is-matched') || card.classList.contains('is-found')) { return; } card.classList.add('is-flipped'); memoFlippedCards.push(card); if (memoFlippedCards.length === 2) { memoLockBoard = true; memoAttempts++; updateGameStatus(); checkForMatch(); } }
+
+        function checkForMatch() {
+            if (!currentDifficulty) return; // Necesario para obtener puntos
+            const [card1, card2] = memoFlippedCards;
+            const isMatch = card1.dataset.pairId === card2.dataset.pairId;
+            const points = pointValues[currentDifficulty].memoTestAttempt; // Puntos para MemoTest
+
+            if (isMatch) {
+                card1.classList.add('is-found');
+                card2.classList.add('is-found');
+                memoMatchedPairs++;
+
+                if (memoGameMode === '1P') {
+                    updateScore(points.correct); // Sumar puntos por pareja correcta
+                } else if (memoGameMode === '2P') {
+                    if (memoCurrentPlayer === 1) memoPlayer1Score++; else memoPlayer2Score++;
+                }
+                updateGameStatus();
+
+                setTimeout(() => {
+                    markCardsAsMatched(card1, card2);
+                    checkWinCondition();
+                }, 2000);
+                resetBoardState();
+            } else {
+                 // Restar puntos por intento fallido SOLO en modo 1P
+                 if (memoGameMode === '1P') {
+                    updateScore(points.incorrect);
+                 }
+                unflipCards(); // Voltea y cambia turno si es 2P
+            }
+        }
+
+        function checkWinCondition() { if (memoMatchedPairs === memoTotalPairs) { let message = ""; if (memoGameMode === '1P') { message = `¡Felicidades! Encontraste ${memoTotalPairs} parejas en ${memoAttempts} intentos. 🎉 <br> Puntuación Total Final: ${playerScore}`; } else { message = `¡Juego Terminado! <br> Jugador 1: ${memoPlayer1Score} puntos <br> Jugador 2: ${memoPlayer2Score} puntos <br>`; if (memoPlayer1Score > memoPlayer2Score) { message += "¡Ganador: Jugador 1! 🏆"; } else if (memoPlayer2Score > memoPlayer1Score) { message += "¡Ganador: Jugador 2! 🏆"; } else { message += "¡Es un empate! 🤔"; } } const winMessageDiv = document.getElementById('win-message'); winMessageDiv.innerHTML = message; winMessageDiv.classList.remove('hidden'); } }
+        function markCardsAsMatched(card1, card2) { card1.classList.remove('is-flipped', 'is-found'); card2.classList.remove('is-flipped', 'is-found'); card1.classList.add('is-matched'); card2.classList.add('is-matched'); }
+        function unflipCards() { const [card1, card2] = memoFlippedCards; setTimeout(() => { card1.classList.remove('is-flipped'); card2.classList.remove('is-flipped'); if (memoGameMode === '2P') { switchPlayer(); } resetBoardState(); }, 1000); }
+        function switchPlayer() { memoCurrentPlayer = memoCurrentPlayer === 1 ? 2 : 1; updateGameStatus(); }
+        function resetBoardState() { memoFlippedCards = []; memoLockBoard = false; }
+        function updateGameStatus() { document.getElementById('matches-count').textContent = memoMatchedPairs; document.getElementById('total-pairs-count').textContent = memoTotalPairs; document.getElementById('attempts-count').textContent = memoAttempts; const turnIndicator = document.getElementById('turn-indicator'); const scoreP1Div = document.getElementById('score-p1'); const scoreP2Div = document.getElementById('score-p2'); if (memoGameMode === '1P') { turnIndicator.textContent = ''; scoreP1Div.classList.add('hidden'); scoreP2Div.classList.add('hidden'); } else { turnIndicator.innerHTML = `Turno: <span class="current-player-indicator">Jugador ${memoCurrentPlayer}</span>`; scoreP1Div.classList.remove('hidden'); scoreP2Div.classList.remove('hidden'); document.getElementById('score-p1-count').textContent = memoPlayer1Score; document.getElementById('score-p2-count').textContent = memoPlayer2Score; } }
+
+        // --- Modal ---
+        function showModal(message) { const modalOverlay = document.createElement('div'); modalOverlay.id = 'modal-overlay'; modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'; const modalContent = document.createElement('div'); modalContent.className = 'bg-white p-6 rounded-lg shadow-xl max-w-sm text-center'; const messageText = document.createElement('p'); messageText.textContent = message; messageText.className = 'mb-4'; const closeButton = document.createElement('button'); closeButton.textContent = 'Entendido'; closeButton.className = 'btn btn-primary'; closeButton.onclick = () => { if (document.getElementById('modal-overlay')) { document.body.removeChild(document.getElementById('modal-overlay')); } }; modalContent.appendChild(messageText); modalContent.appendChild(closeButton); modalOverlay.appendChild(modalContent); if (document.getElementById('modal-overlay')) { document.body.removeChild(document.getElementById('modal-overlay')); } document.body.appendChild(modalOverlay); }
+
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+             document.getElementById('login-screen').classList.remove('hidden');
+             document.getElementById('game-content').classList.add('hidden');
+        });
+    </script>
+
+</body>
+</html>
